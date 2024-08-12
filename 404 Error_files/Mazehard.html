@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Mr Bean Memory Card Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Fira+Sans+Condensed:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        min-height: 100vh;
+        min-width: 100vh;
+        background-color: #ede3cb;
+        color: #4b191c;
+        font-family: 'Fira Sans Condensed', Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      h1 {
+        text-align: center;
+        font-weight: 700;
+        font-size: 40px;
+      }
+
+      p {
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+      }
+
+      .actions button {
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 24px;
+        background-color: #A4BA4D;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin: 0 5px;
+      }
+
+      .grid-container {
+        display: grid;
+        justify-content: center;
+        grid-gap: 12px;
+        grid-template-columns: repeat(4, 90px);
+        grid-template-rows: repeat(4, 135px);
+        margin-top: 20px;
+      }
+
+      .card {
+        height: 135px;
+        width: 90px;
+        border-radius: 10px;
+        background-color: white;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: all 0.5s ease-in-out;
+        border: 2px solid #4b191c;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .front-image {
+        width: 50px;
+        height: 50px;
+      }
+
+      .card.flipped {
+        transform: rotateY(180deg);
+      }
+
+      .front, .back {
+        backface-visibility: hidden;
+        position: absolute;
+        border-radius: 10px;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      .card .front {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transform: rotateY(180deg);
+      }
+
+      .card .back {
+        background-image: url("Mr Bean logo.png");
+        background-position: center center;
+        background-size: cover;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+      }
+      .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        max-width: 90%;
+        width: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .modal-content img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .modal-content h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+      }
+
+      .modal-content button {
+        padding: 10px 20px;
+        font-size: 20px;
+        border-radius: 10px;
+        background-color: #A4BA4D;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin: 10px;
+      }
+
+      .game-actions {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <audio autoplay>
+      <source src="fluffing a duck.wav" type="audio/wav">
+    </audio>
+    <h1>Memory Cards Game</h1>
+    <div class="grid-container"></div>
+    <p>Score: <span class="score"></span></p>
+    <div class="actions game-actions">
+      <p>Time Left: <span class="time">30</span> seconds</p>
+    </div>
+
+    <div class="modal" id="instructionModal">
+      <div class="modal-content">
+        <h2>Help Mr Bean to make a Pearly Taro Soya Milk to quench his thirst! You will only have 30 seconds to collect them before he gets dehydrated.</h2>
+        <button onclick="startGame()">Start Game</button>
+      </div>
+    </div>
+
+    <div class="modal" id="resultModal">
+      <div class="modal-content">
+        <img id="resultImage" src="" alt="Result Image">
+        <h2 id="resultMessage"></h2>
+        <button onclick="window.location.href='https://www.mrbean.com.sg/'">Teleport Mr Bean Back Home</button>
+
+        <button id="restartButton" style="display: none;" onclick="restart()">Restart Game</button>
+      </div>
+    </div>
+
+    <script>
+      const gridContainer = document.querySelector(".grid-container");
+      const timeElement = document.querySelector(".time");
+      const instructionModal = document.getElementById('instructionModal');
+      const resultModal = document.getElementById('resultModal');
+      const resultMessage = document.getElementById('resultMessage');
+      const resultImage = document.getElementById('resultImage');
+      const gameActions = document.querySelector(".game-actions");
+      const restartButton = document.getElementById('restartButton');
+      let cards = [];
+      let firstCard, secondCard;
+      let lockBoard = false;
+      let score = 0;
+      let timeLeft = 30; 
+      let timer;
+
+      document.querySelector(".score").textContent = score;
+
+      let cardData = [
+        { "image": "images/taro.png", "name": "taro" },
+        { "image": "images/measuringcup.png", "name": "measuring cup" },
+        { "image": "images/sticker.png", "name": "sticker" },
+        { "image": "images/straw.png", "name": "straw" },
+        { "image": "images/cup.png", "name": "cup" },
+        { "image": "images/sugar.png", "name": "sugar" },
+        { "image": "images/water.png", "name": "water" },
+        { "image": "images/soyabean.png", "name": "soyabean" }
+      ];
+
+      cards = [...cardData, ...cardData];
+      shuffleCards();
+
+      function shuffleCards() {
+        let currentIndex = cards.length,
+            randomIndex,
+            temporaryValue;
+        while (currentIndex !== 0) {
+          randomIndex = Math.floor(Math.random() * currentIndex);
+          currentIndex -= 1;
+          temporaryValue = cards[currentIndex];
+          cards[currentIndex] = cards[randomIndex];
+          cards[randomIndex] = temporaryValue;
+        }
+      }
+
+      function generateCards() {
+        gridContainer.innerHTML = '';
+        for (let card of cards) {
+          const cardElement = document.createElement("div");
+          cardElement.classList.add("card");
+          cardElement.setAttribute("data-name", card.name);
+          cardElement.innerHTML = `
+            <div class="front">
+              <img class="front-image" src=${card.image} />
+            </div>
+            <div class="back"></div>
+          `;
+          gridContainer.appendChild(cardElement);
+          cardElement.addEventListener("click", flipCard);
+        }
+      }
+
+      function flipCard() {
+        if (lockBoard) return;
+        if (this === firstCard) return;
+
+        this.classList.add("flipped");
+
+        if (!firstCard) {
+          firstCard = this;
+          return;
+        }
+
+        secondCard = this;
+        lockBoard = true;
+
+        checkForMatch();
+      }
+
+      function checkForMatch() {
+        let isMatch = firstCard.getAttribute("data-name") === secondCard.getAttribute("data-name");
+
+        isMatch ? disableCards() : unflipCards();
+      }
+
+      function disableCards() {
+        firstCard.removeEventListener("click", flipCard);
+        secondCard.removeEventListener("click", flipCard);
+
+        resetBoard();
+        score++;
+        document.querySelector(".score").textContent = score;
+
+        if (score === cards.length / 2) {
+          clearInterval(timer);
+          showResultModal(true);
+        }
+      }
+
+      function unflipCards() {
+        setTimeout(() => {
+          firstCard.classList.remove("flipped");
+          secondCard.classList.remove("flipped");
+          resetBoard();
+        }, 1000);
+      }
+
+      function resetBoard() {
+        firstCard = null;
+        secondCard = null;
+        lockBoard = false;
+      }
+
+      function startGame() {
+        instructionModal.style.display = "none";
+        generateCards();
+        startTimer();
+        gameActions.style.display = "flex";
+      }
+
+      function startTimer() {
+        timer = setInterval(() => {
+          timeLeft--;
+          timeElement.textContent = timeLeft;
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            showResultModal(false);
+          }
+        }, 1000);
+      }
+
+      function restart() {
+        clearInterval(timer); 
+        score = 0;
+        timeLeft = 30;
+        document.querySelector(".score").textContent = score;
+        timeElement.textContent = timeLeft;
+        shuffleCards();
+        generateCards();
+        startTimer();
+        resultModal.style.display = "none";
+        gameActions.style.display = "flex"; 
+      }
+
+      function showResultModal(isWin) {
+        resultModal.style.display = "flex";
+        gameActions.style.display = "none";
+
+        if (isWin) {
+          resultMessage.textContent = "Congratulations! Mr Bean managed to survive and escape the forest successfully!";
+          resultImage.src = "images/mrbean_win.png";
+          restartButton.style.display = "none";
+        } else {
+          resultMessage.textContent = "Oh no! Time's up! Mr Bean faints from dehydration and chipmunks cornered him...";
+          resultImage.src = "images/mrbean_lose.png";
+          restartButton.style.display = "block";
+        }
+      }
+
+      window.onload = function() {
+        instructionModal.style.display = "flex";
+      }
+    </script>
+  </body>
+</html>
