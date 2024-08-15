@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<title>Theme Park Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<script>
+    //our own calc function
+    function calc(){
+        //alert("Ok I will calculate");
+        //grab values
+        var a=document.getElementById("adults").value;
+        var s=document.getElementById("seniors").value;
+        var c=document.getElementById("children").value;
+        var f=document.getElementById("fastpass").value;
+        //alert(a+" "+s+" "+c+" "+f);
+       var cost= a*50+s*40+c*30+f*20;
+       alert("The total cost is $"+cost);
+
+        //check weekend or weekday
+        var d=document.querySelector('input[name="day"];checked').value;
+        if(d=="Weekend"){
+            cost*=1.1;
+        }
+        //alert(The total cost is "+cost);
+        document.getElementsById('total').innerHTML=cost;
+        document.getElementById('id01').style.display='block';
+        }
+        function check (t){
+            if(isNan(t.value)){
+                t.value="";
+                t.focus();
+                alert("Please enter a number");
+            }
+        }
+</script>
+<body>
+    <div class="w3-container">
+        <div class="w3-panel w3-card-4 w3-third">
+   
+            <h1>Ticket Calculator</h1>
+            <label>Adults</label>
+            <input id="adults" class="w3-input" type="text"onchange="check(this)">
+            <label>Seniors</label>
+            <input id="seniors" class="w3-input" type="text"onchange="check(this)">
+            <label>Children</label>
+            <input id="children" class="w3-input" type="text"onchange="check(this)">
+            <label>Fast Pass</label>
+            <input id="fastpass" class="w3-input" type="text"onchange="check(this)">
+
+            <input class="w3-radio w3-margin-top" type="radio" name="day" value="Weekday" checked> 
+            <label>Weekday</label>
+            <input class="w3-radio w3-margin-top" type="radio" name="day" value="Weekend"> 
+            <label>Weekend/holiday</label>
+            <button class="w3-button w3-block w3-round w3-purple w3-margin-top w3-margin-bottom" onclick="calc()">Calculate</button>
+    </div>
+    <!--The Modal-->
+    <div id="id01"class="w3-modal">
+        <div class="w3-modal-content">
+        <span onclick="document.getElementById('id01').style.display='none'"
+        class="w3-button w3-display-topright">&times;</span>
+        <div class="w3-container">
+            <p>The total cost of your tickets:</p>
+            <h4 id="total"></h4>
+        </div>
+       </div>
+
+</body>
+</html>
